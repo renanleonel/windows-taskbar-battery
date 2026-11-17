@@ -7,7 +7,7 @@
 //! - A worker thread scans devices and posts WM_APP_UPDATE to the controller.
 
 use crate::device::{Reading, Status, Tracker};
-use crate::{bluetooth, delux, diag, headsetcontrol, init_com, logitech, notify, playstation, render, settings, wide, xbox};
+use crate::{bluetooth, delux, diag, headsetcontrol, hyperx, init_com, logitech, notify, playstation, render, settings, wide, xbox};
 use std::cell::RefCell;
 use std::mem::{size_of, zeroed};
 use std::ptr::{null, null_mut};
@@ -175,6 +175,7 @@ fn worker(controller: usize, rx: Receiver<()>) {
     let mut tracker = Tracker::default();
     let mut alerts = notify::LowBatteryAlerts::default();
     let mut bt = Vec::new();
+    let mut hyperx_obs = Vec::new();
     let mut last_bt: Option<Instant> = None;
     let mut forced = true;
 
@@ -186,13 +187,15 @@ fn worker(controller: usize, rx: Receiver<()>) {
         obs.extend(xbox::scan());
         if forced || last_bt.is_none_or(|t| t.elapsed() >= POLL_BLUETOOTH) {
             bt = bluetooth::scan();
+            hyperx_obs = hyperx::scan(&api);
             if let Some(exe) = headsetcontrol::find() {
                 bt.extend(headsetcontrol::scan(&exe, |pid| logitech::reports_pid(&obs, pid)));
             }
             last_bt = Some(Instant::now());
         }
-        // Re-feed the last Bluetooth results between Bluetooth scans so they don't look gone.
+        // Re-feed the last Bluetooth/HyperX results between scans so they don't look gone.
         obs.extend(bt.iter().cloned());
+        obs.extend(hyperx_obs.iter().cloned());
         let readings = tracker.update(obs);
         alerts.check(&readings);
         *READINGS.lock().unwrap() = Some(readings);

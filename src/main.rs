@@ -5,6 +5,7 @@ mod delux;
 mod device;
 mod diag;
 mod headsetcontrol;
+mod hyperx;
 mod logitech;
 mod notify;
 mod playstation;
@@ -48,6 +49,7 @@ fn main() {
             obs.extend(delux.scan(&api));
             obs.extend(xbox::scan());
             obs.extend(bluetooth::scan());
+            obs.extend(hyperx::scan(&api));
             match headsetcontrol::find() {
                 Some(exe) => {
                     eprintln!("[headsetcontrol] using {}", exe.display());

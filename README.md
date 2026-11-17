@@ -4,7 +4,7 @@
 
 ![taskbar-battery on the Windows 11 taskbar](docs/screenshot.png)
 
-- **Automatic:** detects Logitech wireless devices, Bluetooth devices, and Xbox/PlayStation controllers on its own, with nothing to configure.
+- **Automatic:** detects Logitech wireless devices, HyperX Cloud Flight S, Bluetooth devices, and Xbox/PlayStation controllers on its own, with nothing to configure.
 - **Lightweight:** a single ~600 KB executable written in Rust. It uses under 1 MB of memory as shown in Task Manager (about 3 MB committed), has no installer or runtime dependencies (not even the Visual C++ runtime), and sits idle between checks.
 - **Accurate:** for Logitech devices that report a voltage, it uses G HUB's own battery curves (when G HUB is installed), so the percentages match what G HUB shows.
 - **Native look:** follows the light/dark taskbar theme, scales with DPI, and uses Windows' own Fluent icons.
@@ -37,6 +37,7 @@
 |---|---|---|
 | **Logitech receivers**: Lightspeed, Unifying, Bolt | Mice, keyboards, and anything else paired to the receiver | Logitech's HID++ protocol, over the receiver |
 | **Logitech dongles** | Wireless headsets (e.g. PRO X Wireless, G series) | HID++, directly over the dongle |
+| **HyperX dongles** | Cloud Flight S (`0951:16EA`) | Vendor HID report (battery + charging) |
 | **Bluetooth LE** | Most Bluetooth mice, keyboards, and gamepads | Standard GATT Battery Service |
 | **Classic Bluetooth** | Headphones and earbuds (AirPods, Galaxy Buds, Sony…) | The battery level the device reports to Windows, the same value Settings › Bluetooth shows |
 | **Xbox controllers** | Xbox One / Series and other XInput controllers, over the Xbox Wireless adapter, Bluetooth, or USB | Windows.Gaming.Input battery report (exact capacity) |
@@ -52,6 +53,7 @@
 | Logitech PRO X Wireless (headset) | USB dongle | ✅ matches G HUB |
 | Apple AirPods | Classic Bluetooth | ✅ |
 | Delux wireless mouse | 2.4 GHz dongle (1D57:FA60) | ✅ matches the Delux app (±2%) |
+| HyperX Cloud Flight S | USB dongle | ✅ battery matches NGENUITY |
 | Bluetooth LE mouse/keyboard | Bluetooth LE | ⚠️ implemented, not yet tested on hardware |
 | Xbox / PlayStation controllers | all | ⚠️ implemented, not yet tested on hardware |
 | HeadsetControl headsets | USB dongle | ⚠️ implemented, not yet tested on hardware |
@@ -124,6 +126,7 @@ Right-click the widget to see:
 |---|---|
 | Logitech, Xbox, and PlayStation controllers | every 15 s |
 | Bluetooth | every 60 s (reading wakes the device's radio, so it's polled less often) |
+| HyperX Cloud Flight S | every 60 s |
 | HeadsetControl | every 60 s (it runs as a separate process) |
 | Any USB device plugged in or out | immediately |
 | PC wakes from sleep | immediately |
@@ -164,6 +167,17 @@ Logitech wireless devices speak **HID++**, a protocol tunneled through vendor-de
 4. For voltage-only devices, converts millivolts to a percentage. If G HUB is installed, it uses G HUB's per-device discharge curve from `C:\ProgramData\LGHUB\depots\…\*battery*.xml`, so the numbers match G HUB exactly. Otherwise it uses a generic Li-ion curve, which is usually within a few percent.
 
 It works alongside G HUB: requests are tagged with their own software ID, so the two don't interfere. G HUB doesn't need to be running, or even installed.
+
+### HyperX (Cloud Flight S)
+
+The Cloud Flight S dongle exposes a vendor HID collection on interface 5 (usage page `0xFF13`, usage
+`0x0001`). taskbar-battery sends the 62-byte report `0x06` from the Classic DSP second command set:
+
+- `BB 02` returns the battery percentage in byte 7.
+- `BB 03` returns the charging state in byte 4.
+
+The replies arrive on the interrupt endpoint. This was verified on a Cloud Flight S on Windows 11, with
+the percentage matching NGENUITY. HeadsetControl isn't required for this model.
 
 ### Bluetooth
 
@@ -212,6 +226,7 @@ If `headsetcontrol.exe` (or `headsetcontrol-windows-x86_64.exe`) is next to `tas
 - Tools that take exclusive control of the controller (e.g. DS4Windows with "Hide DS4 controller") can prevent reading it.
 
 **My SteelSeries / HyperX / Corsair headset is missing.**
+- The **Cloud Flight S** is read natively; HeadsetControl isn't needed for it.
 - Install [HeadsetControl](#other-headsets-headsetcontrol), then restart taskbar-battery. Check that HeadsetControl itself shows the battery: run `headsetcontrol -b`.
 
 **The percentage differs from G HUB.**
@@ -305,6 +320,7 @@ src/
 ├── playstation.rs     DualSense / DualShock 4 input reports
 ├── delux.rs           Delux / generic mice on the Xenta 2.4 GHz dongle
 ├── headsetcontrol.rs  optional HeadsetControl integration
+├── hyperx.rs          HyperX Cloud Flight S battery (vendor HID report)
 ├── widget.rs          taskbar window, menu, tooltip, worker thread
 ├── notify.rs          low-battery notifications
 ├── render.rs          drawing (per-pixel alpha text and icons)
@@ -336,6 +352,7 @@ Please run `cargo clippy --all-targets -- -D warnings` and `cargo test` before o
 - [Wireless-Device-Battery-Monitor](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor) by krisgfx9: the original inspiration for this project, and a much broader tool (C++, dozens of brands). If your device isn't supported here, try it.
 - [Solaar](https://github.com/pwr-Solaar/Solaar): the reference for Logitech's HID++ protocol.
 - [HeadsetControl](https://github.com/Sapd/HeadsetControl): headset protocol research.
+- [Nogenuity](https://github.com/esdedev/nogenuity): HyperX Cloud Flight S protocol documentation.
 - [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor): inspiration for the taskbar placement technique.
 
 This project isn't affiliated with or endorsed by Logitech, Apple, or Microsoft. All trademarks belong to their owners.
