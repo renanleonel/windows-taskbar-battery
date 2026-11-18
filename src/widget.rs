@@ -7,7 +7,7 @@
 //! - A worker thread scans devices and posts WM_APP_UPDATE to the controller.
 
 use crate::device::{Reading, Status, Tracker};
-use crate::{bluetooth, corsair, corsair_slipstream, delux, device, diag, headsetcontrol, hid_battery, init_com, logitech, mchose, mchose_mouse, notify, playstation, probe, razer, render, settings, steelseries, wide, xbox};
+use crate::{bluetooth, corsair, corsair_slipstream, delux, device, diag, headsetcontrol, hid_battery, init_com, logitech, mchose, mchose_mouse, notify, playstation, probe, rapoo, razer, render, settings, steelseries, wide, xbox};
 use std::cell::RefCell;
 use std::mem::{size_of, zeroed};
 use std::ptr::{null, null_mut};
@@ -183,6 +183,7 @@ fn worker(controller: usize, rx: Receiver<()>) {
     let mut corsair = corsair::Corsair::default();
     let mut corsair_slipstream = corsair_slipstream::CorsairSlipstream::default();
     let mut hid_battery = hid_battery::HidBattery::default();
+    let mut rapoo = rapoo::Rapoo::default();
     let mut razer = razer::Razer::default();
     let mut steelseries = steelseries::SteelSeries::default();
     let mut tracker = Tracker::default();
@@ -199,6 +200,7 @@ fn worker(controller: usize, rx: Receiver<()>) {
         obs.extend(mchose.scan(&api));
         obs.extend(mchose_mice.scan(&api));
         obs.extend(corsair.scan(&api));
+        obs.extend(rapoo.scan(&api));
         obs.extend(razer.scan(&api));
         obs.extend(steelseries.scan(&api));
         obs.extend(corsair_slipstream.scan(&api));

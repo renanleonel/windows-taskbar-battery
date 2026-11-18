@@ -14,6 +14,7 @@ mod mchose_mouse;
 mod notify;
 mod playstation;
 mod probe;
+mod rapoo;
 mod razer;
 mod render;
 mod settings;
@@ -58,9 +59,12 @@ fn main() {
             obs.extend(playstation::scan(&api));
             let mut delux = delux::Delux::default();
             let _ = delux.scan(&api); // opens the dongle; its status report comes every ~2 s
+            let mut rapoo = rapoo::Rapoo::default();
+            let _ = rapoo.scan(&api); // opens the dongle; its status report comes every ~5 s
             let _ = xbox::scan(); // first call only starts controller enumeration
-            std::thread::sleep(std::time::Duration::from_millis(2500));
+            std::thread::sleep(std::time::Duration::from_millis(6000));
             obs.extend(delux.scan(&api));
+            obs.extend(rapoo.scan(&api));
             obs.extend(mchose::Mchose::default().scan(&api));
             obs.extend(mchose_mouse::MchoseMice::default().scan(&api));
             obs.extend(corsair::Corsair::default().scan(&api));
