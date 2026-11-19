@@ -4,6 +4,8 @@
 //! (usage page 0x0A) about every 2 s; the last byte is the battery percentage.
 //! Observed while charging: `03 2c 40 01 36` (54%) -> `03 2c 40 01 37` (55%).
 //! The charging flag isn't known, so it's always reported as not charging.
+//! A 0% report is dropped: one shows up now and then between normal readings (likely while
+//! the mouse sleeps or drops the link), and a mouse really at 0% couldn't send it.
 //!
 //! The dongle stays open between scans and each scan drains the reports queued since the
 //! last one without waiting, so a quiet dongle never delays the other sources.
@@ -52,7 +54,7 @@ impl Delux {
                 Ok(0) => break,
                 Ok(n) => match parse(&buf[..n]) {
                     Some(p) => self.last = Some((p, Instant::now())),
-                    None => other = Some((buf[0], n)),
+                    None => other = Some(buf[..n].iter().map(|b| format!("{b:02x}")).collect::<Vec<_>>().join(" ")),
                 },
                 Err(e) => {
                     // Dongle unplugged: reopen on the next scan.
@@ -70,7 +72,7 @@ impl Delux {
             }
             last => {
                 diag::event(KEY, match other {
-                    Some((id, n)) => format!("no 0x03 report since last scan (last: 0x{id:02X}, {n} bytes)"),
+                    Some(r) => format!("no battery report since last scan (last: {r})"),
                     None => "no 0x03 report since last scan".to_string(),
                 });
                 // Never read yet (just opened): nothing to show until the first report.
@@ -91,7 +93,7 @@ impl Delux {
 
 fn parse(r: &[u8]) -> Option<u8> {
     match r {
-        [0x03, _, _, _, p] if *p <= 100 => Some(*p),
+        [0x03, _, _, _, p] if (1..=100).contains(p) => Some(*p),
         _ => None,
     }
 }
@@ -102,6 +104,7 @@ mod tests {
     fn parse() {
         assert_eq!(super::parse(&[0x03, 0x2c, 0x40, 0x01, 0x36]), Some(54));
         assert_eq!(super::parse(&[0x03, 0x2c, 0x40, 0x01, 0xff]), None);
+        assert_eq!(super::parse(&[0x03, 0x2c, 0x40, 0x01, 0x00]), None);
         assert_eq!(super::parse(&[0x01, 0x00]), None);
     }
 }

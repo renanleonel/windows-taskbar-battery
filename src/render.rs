@@ -17,15 +17,18 @@ const STALE_OPACITY: u32 = 130;
 /// Newer glyph (clearer at small sizes); older Segoe Fluent Icons versions only have the pair.
 const EARBUD_SINGLE: &str = "\u{F27C}";
 const EARBUD_PAIR: &str = "\u{F4C0}";
+/// Drawn from Segoe MDL2 Assets: the same code point in Segoe Fluent Icons is a flat rounded
+/// box at 15 px that reads as a keyboard; the MDL2 one has grips.
+const GAMEPAD: &str = "\u{E7FC}";
 
-/// Segoe Fluent Icons glyph per device kind.
+/// Segoe Fluent Icons glyph per device kind (the gamepad is drawn from Segoe MDL2 Assets).
 fn icon(kind: Kind) -> &'static str {
     match kind {
         Kind::Headset => "\u{E7F6}",
         Kind::Earbuds => EARBUD_SINGLE, // swapped for EARBUD_PAIR if the font lacks it
         Kind::Mouse => "\u{E962}",
         Kind::Keyboard => "\u{E765}",
-        Kind::Gamepad => "\u{E7FC}",
+        Kind::Gamepad => GAMEPAD,
         Kind::Other => "\u{E83F}", // battery
     }
 }
@@ -96,6 +99,13 @@ pub unsafe fn draw(hwnd: HWND, items: &[(Kind, Status)], dpi: u32, layout: Layou
     ReleaseDC(null_mut(), screen);
     let text_font = font("Segoe UI", -s(12));
     let icon_font = font("Segoe Fluent Icons", -s(15));
+    let symbol_font = font("Segoe MDL2 Assets", -s(15));
+    let gamepad = wide(GAMEPAD);
+    let font_of = |seg: &Seg| match (seg.icon, seg.text == gamepad) {
+        (false, _) => text_font,
+        (true, true) => symbol_font,
+        (true, false) => icon_font,
+    };
 
     // Fall back to the earbud pair if this font version lacks the single earbud.
     SelectObject(dc, icon_font);
@@ -109,7 +119,7 @@ pub unsafe fn draw(hwnd: HWND, items: &[(Kind, Status)], dpi: u32, layout: Layou
 
     // Measure.
     for seg in &mut segs {
-        SelectObject(dc, if seg.icon { icon_font } else { text_font });
+        SelectObject(dc, font_of(seg));
         let mut size: SIZE = zeroed();
         GetTextExtentPoint32W(dc, seg.text.as_ptr(), seg.text.len() as i32 - 1, &mut size);
         seg.w = size.cx;
@@ -175,6 +185,7 @@ pub unsafe fn draw(hwnd: HWND, items: &[(Kind, Status)], dpi: u32, layout: Layou
     if bmp.is_null() || bits.is_null() {
         DeleteObject(text_font);
         DeleteObject(icon_font);
+        DeleteObject(symbol_font);
         DeleteDC(dc);
         return (width, height);
     }
@@ -182,7 +193,7 @@ pub unsafe fn draw(hwnd: HWND, items: &[(Kind, Status)], dpi: u32, layout: Layou
     SetBkMode(dc, TRANSPARENT as _);
     SetTextColor(dc, 0x00FF_FFFF);
     for seg in &segs {
-        SelectObject(dc, if seg.icon { icon_font } else { text_font });
+        SelectObject(dc, font_of(seg));
         TextOutW(dc, seg.x, seg.y, seg.text.as_ptr(), seg.text.len() as i32 - 1);
     }
     GdiFlush();
@@ -221,6 +232,7 @@ pub unsafe fn draw(hwnd: HWND, items: &[(Kind, Status)], dpi: u32, layout: Layou
     DeleteObject(bmp);
     DeleteObject(text_font);
     DeleteObject(icon_font);
+    DeleteObject(symbol_font);
     DeleteDC(dc);
     (width, height)
 }
