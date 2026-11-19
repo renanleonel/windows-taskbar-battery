@@ -47,6 +47,7 @@
 | **Corsair headsets** | HS80 MAX, VOID WIRELESS V2, VIRTUOSO MAX, and the older VOID / VOID PRO / VOID RGB ELITE / HS70 wireless headsets, over their dongle | The dongle's battery query, as iCUE does (charging detected on the older VOID family only) |
 | **Razer mice and keyboards** | 38 wireless mouse models (Viper, DeathAdder, Basilisk, Naga, Cobra, Pro Click, Orochi V2…) and the wireless BlackWidow V3/V4, DeathStalker V2 Pro and Joro keyboards, over the receiver or a cable | Razer's own battery and charging queries, as Synapse uses them |
 | **SteelSeries mice** | Aerox 3/5/9 Wireless, Prime (Mini) Wireless, Rival 3 Wireless (Gen 2), Rival 650 Wireless, over the dongle or a cable | The mouse's battery query (charging detected) |
+| **VXE mice** | R1 SE (373B:10C9) and MAD R, plus other VXE / ATK mice that answer the same query, over the dongle or a cable | The dongle's battery query, the one the ATK app uses (charging detected) |
 | **Corsair mice and keyboards** | Harpoon, Dark Core, Ironclaw, M65/M75, Sabre, Scimitar, K57, K70 Core TKL, K100 Air… on a SLIPSTREAM dongle | The dongle's battery query, without taking the device from iCUE (charging state not detected) |
 | **Other USB devices** | Any dongle or device that reports its battery the standard HID way (a Battery Strength field) | Read straight from the device's own HID description |
 | **MCHOSE headsets** | V9 Pro (291D:385D) and X9 (3837:6045) over their 2.4 GHz dongle | The dongle's battery query, the one M HUB uses (charging state not detected) |
@@ -60,6 +61,7 @@
 | Logitech PRO X Wireless (headset) | USB dongle | ✅ matches G HUB |
 | Apple AirPods | Classic Bluetooth | ✅ |
 | Delux wireless mouse | 2.4 GHz dongle (1D57:FA60) | ✅ matches the Delux app (±2%) |
+| VXE R1 SE (mouse) | 2.4 GHz dongle (373B:10C9) | ✅ matches the ATK app |
 | Bluetooth LE mouse/keyboard | Bluetooth LE | ⚠️ implemented, not yet tested on hardware |
 | Xbox / PlayStation controllers | all | ⚠️ implemented, not yet tested on hardware |
 | HeadsetControl headsets | USB dongle | ⚠️ implemented, not yet tested on hardware |
@@ -375,9 +377,10 @@ Please run `cargo clippy --all-targets -- -D warnings` and `cargo test` before o
 - [OpenRazer](https://github.com/openrazer/openrazer): the Razer protocol and model table.
 - [rivalcfg](https://github.com/flozz/rivalcfg): the SteelSeries mouse protocols.
 - [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub): the Corsair SLIPSTREAM protocol.
+- [madr](https://github.com/dkbednarczyk/madr): the VXE battery query.
 - [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor): inspiration for the taskbar placement technique.
 
-This project isn't affiliated with or endorsed by Logitech, Razer, Corsair, SteelSeries, MCHOSE, Delux, Sony, Apple, or Microsoft. All trademarks belong to their owners.
+This project isn't affiliated with or endorsed by Logitech, Razer, Corsair, SteelSeries, MCHOSE, Delux, VXE, Sony, Apple, or Microsoft. All trademarks belong to their owners.
 
 ## License
 
