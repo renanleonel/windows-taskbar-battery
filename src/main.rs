@@ -18,6 +18,7 @@ mod razer;
 mod render;
 mod settings;
 mod steelseries;
+mod vxe;
 mod widget;
 mod xbox;
 
@@ -67,6 +68,7 @@ fn main() {
             obs.extend(corsair_slipstream::CorsairSlipstream::default().scan(&api));
             obs.extend(razer::Razer::default().scan(&api));
             obs.extend(steelseries::SteelSeries::default().scan(&api));
+            obs.extend(vxe::Vxe::default().scan(&api));
             obs.extend(hid_battery::HidBattery::default().scan(&api));
             obs.extend(xbox::scan());
             obs.extend(bluetooth::scan());

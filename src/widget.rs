@@ -7,7 +7,7 @@
 //! - A worker thread scans devices and posts WM_APP_UPDATE to the controller.
 
 use crate::device::{Reading, Status, Tracker};
-use crate::{bluetooth, corsair, corsair_slipstream, delux, device, diag, headsetcontrol, hid_battery, init_com, logitech, mchose, mchose_mouse, notify, playstation, probe, razer, render, settings, steelseries, wide, xbox};
+use crate::{bluetooth, corsair, corsair_slipstream, delux, device, diag, headsetcontrol, hid_battery, init_com, logitech, mchose, mchose_mouse, notify, playstation, probe, razer, render, settings, steelseries, vxe, wide, xbox};
 use std::cell::RefCell;
 use std::mem::{size_of, zeroed};
 use std::ptr::{null, null_mut};
@@ -185,6 +185,7 @@ fn worker(controller: usize, rx: Receiver<()>) {
     let mut hid_battery = hid_battery::HidBattery::default();
     let mut razer = razer::Razer::default();
     let mut steelseries = steelseries::SteelSeries::default();
+    let mut vxe = vxe::Vxe::default();
     let mut tracker = Tracker::default();
     let mut alerts = notify::LowBatteryAlerts::default();
     let mut bt = Vec::new();
@@ -201,6 +202,7 @@ fn worker(controller: usize, rx: Receiver<()>) {
         obs.extend(corsair.scan(&api));
         obs.extend(razer.scan(&api));
         obs.extend(steelseries.scan(&api));
+        obs.extend(vxe.scan(&api));
         obs.extend(corsair_slipstream.scan(&api));
         obs.extend(hid_battery.scan(&api));
         obs.extend(xbox::scan());
