@@ -66,7 +66,7 @@
 | HeadsetControl headsets | USB dongle | ⚠️ implemented, not yet tested on hardware |
 | MCHOSE V9 Pro / X9 (headset) | 2.4 GHz dongle | ⚠️ implemented, not yet tested on hardware |
 | MCHOSE mice (classic protocol) | 2.4 GHz receiver, cable | ⚠️ implemented, not yet tested on hardware |
-| Rapoo VT2 Pro Max | 2.4 GHz dongle (24AE:1423) | ✅ matches the Rapoo app |
+| Rapoo VT2 Pro Max | 2.4 GHz dongle (24AE:1423) | ✅ matches the Rapoo app, per a user report (charging not detected) |
 | Corsair HS80 MAX / VOID WIRELESS V2 / VIRTUOSO MAX | dongle | ⚠️ implemented, not yet tested on hardware |
 | Corsair VOID / VOID PRO / VOID RGB ELITE / HS70 Wireless | dongle | ⚠️ implemented, not yet tested on hardware |
 | Razer mice and keyboards | receiver, cable | ⚠️ implemented, not yet tested on hardware |
