@@ -131,7 +131,7 @@ Right-click the widget to see:
 - **Every detected device** with its current level, including disconnected ones. Uncheck a device to hide it from the taskbar, check it again to bring it back.
 - **Refresh now:** checks all devices immediately.
 - **Low battery alerts:** a Windows notification when a device drops to 15%, sent once per discharge. It re-arms after the device is charged or climbs above 20%. On by default.
-- **Start with Windows:** turn launching at login on or off. It's on by default.
+- **Start with Windows:** turn launching at login on or off. It's on by default. It also follows Windows' own Startup apps switch (Task Manager → Startup apps): if that's off, this is unchecked, and checking it turns it back on.
 - **Probe an unsupported device (60 s):** records what your USB dongles send, for a device report. See [Probing an unsupported device](#probing-an-unsupported-device).
 - **Exit**
 
@@ -288,6 +288,7 @@ Everything it writes:
 | Location | Purpose |
 |---|---|
 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `TaskbarBattery` | Start with Windows |
+| `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` → `TaskbarBattery` | Windows' Startup apps switch for it (written when you toggle Start with Windows) |
 | `HKCU\Software\taskbar-battery` → `AutostartOptOut`, `Hidden`, `LowBatteryAlerts` | Your menu choices |
 | `HKCU\Software\Classes\AppUserModelId\TaskbarBattery` | Lets Windows show its notifications |
 | `%LOCALAPPDATA%\taskbar-battery\icon.png` | Icon shown in its notifications |

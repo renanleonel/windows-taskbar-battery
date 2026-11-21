@@ -87,6 +87,7 @@ pub fn run() {
         settings::ensure_autostart();
         settings::register_app_id();
         diag::start();
+        diag::event("autostart", settings::autostart_status());
 
         let hinst = GetModuleHandleW(null());
         let ctrl_class = wide("TaskbarBatteryController");

@@ -10,12 +10,23 @@ use windows_sys::Win32::System::Registry::*;
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const APP_KEY: &str = r"Software\taskbar-battery";
 const RUN_VALUE: &str = "TaskbarBattery";
+/// Windows' own on/off switch for each Run entry (Task Manager > Startup apps, Settings >
+/// Apps > Startup). A 12-byte binary value: an odd first byte means disabled, and Windows
+/// then skips the Run entry at logon even though it's there.
+const STARTUP_APPROVED_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+const APPROVED_ON: [u8; 12] = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 pub fn light_theme() -> bool {
     read_dword(r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme") == Some(1)
 }
 
+/// Whether Windows will actually start the app at logon: the Run entry is there and not
+/// turned off in Windows' Startup apps.
 pub fn autostart_enabled() -> bool {
+    run_entry_present() && !startup_disabled_by_windows()
+}
+
+fn run_entry_present() -> bool {
     let (k, v) = (wide(RUN_KEY), wide(RUN_VALUE));
     let mut size = 0u32;
     unsafe {
@@ -24,7 +35,26 @@ pub fn autostart_enabled() -> bool {
     }
 }
 
-pub fn set_autostart(on: bool) {
+/// Turned off in Task Manager > Startup apps (or Settings > Apps > Startup).
+fn startup_disabled_by_windows() -> bool {
+    read_binary(STARTUP_APPROVED_KEY, RUN_VALUE).is_some_and(|b| is_disabled(&b))
+}
+
+fn is_disabled(approved: &[u8]) -> bool {
+    approved.first().is_some_and(|b| b & 1 == 1)
+}
+
+/// For diagnostics: why the app would or wouldn't start with Windows.
+pub fn autostart_status() -> &'static str {
+    match (run_entry_present(), startup_disabled_by_windows()) {
+        (false, _) => "off (no Run entry)",
+        (true, true) => "off (turned off in Windows' Startup apps)",
+        (true, false) => "on",
+    }
+}
+
+/// Adds (with the current exe path) or removes the Run entry.
+fn write_run_entry(on: bool) {
     let (k, v) = (wide(RUN_KEY), wide(RUN_VALUE));
     unsafe {
         if on {
@@ -35,16 +65,31 @@ pub fn set_autostart(on: bool) {
             RegDeleteKeyValueW(HKEY_CURRENT_USER, k.as_ptr(), v.as_ptr());
         }
     }
+}
+
+/// From the menu: also flips Windows' Startup apps switch, so checking "Start with Windows"
+/// undoes a "Disable" from Task Manager, and remembers the choice.
+pub fn set_autostart(on: bool) {
+    write_run_entry(on);
+    let (k, v) = (wide(STARTUP_APPROVED_KEY), wide(RUN_VALUE));
+    unsafe {
+        if on {
+            RegSetKeyValueW(HKEY_CURRENT_USER, k.as_ptr(), v.as_ptr(), REG_BINARY, APPROVED_ON.as_ptr() as *const c_void, APPROVED_ON.len() as u32);
+        } else {
+            RegDeleteKeyValueW(HKEY_CURRENT_USER, k.as_ptr(), v.as_ptr());
+        }
+    }
     write_dword(APP_KEY, "AutostartOptOut", u32::from(!on));
 }
 
 /// Release builds register themselves to start with Windows (and refresh the path if the
-/// exe moved), unless the user turned it off from the menu.
+/// exe moved), unless the user turned it off from the menu. A "Disable" in Windows' Startup
+/// apps is left alone; the menu shows it unchecked and can turn it back on.
 pub fn ensure_autostart() {
     if cfg!(debug_assertions) || read_dword(APP_KEY, "AutostartOptOut") == Some(1) {
         return;
     }
-    set_autostart(true);
+    write_run_entry(true);
 }
 
 pub fn alerts_enabled() -> bool {
@@ -127,6 +172,16 @@ fn read_string_in(root: HKEY, key: &str, name: &str) -> Option<String> {
     }
 }
 
+fn read_binary(key: &str, name: &str) -> Option<Vec<u8>> {
+    let (k, n) = (wide(key), wide(name));
+    let mut buf = [0u8; 64];
+    let mut size = buf.len() as u32;
+    let r = unsafe {
+        RegGetValueW(HKEY_CURRENT_USER, k.as_ptr(), n.as_ptr(), RRF_RT_REG_BINARY, null_mut(), buf.as_mut_ptr() as *mut c_void, &mut size)
+    };
+    (r == ERROR_SUCCESS).then(|| buf[..size as usize].to_vec())
+}
+
 fn read_dword(key: &str, name: &str) -> Option<u32> {
     read_dword_in(HKEY_CURRENT_USER, key, name)
 }
@@ -152,5 +207,19 @@ fn write_dword(key: &str, name: &str, value: u32) {
     let (k, n) = (wide(key), wide(name));
     unsafe {
         RegSetKeyValueW(HKEY_CURRENT_USER, k.as_ptr(), n.as_ptr(), REG_DWORD, &value as *const u32 as *const c_void, 4);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn startup_approved_flag() {
+        assert!(!is_disabled(&APPROVED_ON));
+        assert!(!is_disabled(&[0x06, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+        assert!(is_disabled(&[0x03, 0, 0, 0, 0x8a, 0x3c, 0x1d, 0x5e, 0x2f, 0x5b, 0xdb, 0x01]));
+        assert!(is_disabled(&[0x07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+        assert!(!is_disabled(&[]));
     }
 }
