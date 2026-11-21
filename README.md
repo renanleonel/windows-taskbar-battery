@@ -50,7 +50,7 @@
 | **SteelSeries mice** | Aerox 3/5/9 Wireless, Prime (Mini) Wireless, Rival 3 Wireless (Gen 2), Rival 650 Wireless, over the dongle or a cable | The mouse's battery query (charging detected) |
 | **VXE mice** | R1 SE (373B:10C9) and MAD R, plus other VXE / ATK mice that answer the same query, over the dongle or a cable | The dongle's battery query, the one the ATK app uses (charging detected) |
 | **Corsair mice and keyboards** | Harpoon, Dark Core, Ironclaw, M65/M75, Sabre, Scimitar, K57, K70 Core TKL, K100 Air… on a SLIPSTREAM dongle | The dongle's battery query, without taking the device from iCUE (charging state not detected) |
-| **Attack Shark mice** | R5 Ultra and other Attack Shark mice on their 2.4 GHz dongle (USB ID 373E) | The dongle's status report, read without writing to it (charging state not detected) |
+| **Attack Shark mice** | R5 Ultra (373E:0047) over its 2.4 GHz dongle; other Attack Shark mice on a 373E dongle may work but are untested | The dongle's status report, read without writing to it (charging state not detected) |
 | **Other USB devices** | Any dongle or device that reports its battery the standard HID way (a Battery Strength field) | Read straight from the device's own HID description |
 | **MCHOSE headsets** | V9 Pro (291D:385D) and X9 (3837:6045) over their 2.4 GHz dongle | The dongle's battery query, the one M HUB uses (charging state not detected) |
 | **Other headsets** via [HeadsetControl](#other-headsets-headsetcontrol) | SteelSeries Arctis, HyperX Cloud, Corsair, Audeze, Logitech G and more | HeadsetControl, if installed (optional) |

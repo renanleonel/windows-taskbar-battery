@@ -19,16 +19,14 @@ use hidapi::{HidApi, HidDevice};
 use std::collections::HashMap;
 use std::ffi::CString;
 
-pub const VID: u16 = 0x373E;
+const VID: u16 = 0x373E;
 const USAGE_PAGE: u16 = 0xFFFF;
 const USAGE: u16 = 0x0000;
 /// Report id byte plus 64 data bytes.
 const REPORT_LEN: usize = 65;
 /// Index of the battery byte in the buffer (the report id byte comes first).
-const BATTERY_AT: usize = 8;
+const BATTERY_INDEX: usize = 8;
 
-/// Product ids with a known name. Others still work and show as "Attack Shark mouse".
-const NAMES: &[(u16, &str)] = &[(0x0047, "Attack Shark R5 Ultra")];
 
 struct Dongle {
     dev: HidDevice,
@@ -63,19 +61,19 @@ impl AttackShark {
 
         let mut out = Vec::new();
         let mut broken = Vec::new();
-        for (path, d) in self.open.iter_mut() {
-            let key = key(d.pid);
+        for (path, dongle) in self.open.iter_mut() {
+            let key = key(dongle.pid);
             let mut buf = [0u8; REPORT_LEN];
-            let state = match d.dev.get_feature_report(&mut buf) {
+            let state = match dongle.dev.get_feature_report(&mut buf) {
                 Ok(n) => match parse(&buf[..n.min(REPORT_LEN)]) {
                     Some(percent) => {
-                        d.seen = true;
+                        dongle.seen = true;
                         diag::event(&key, "battery via feature report 0x00");
                         State::Battery { percent, charging: false }
                     }
                     None => {
                         diag::event(&key, format!("no battery level (report: {})", hex(&buf[..n.min(12)])));
-                        if !d.seen {
+                        if !dongle.seen {
                             continue; // nothing to show until the first reading
                         }
                         State::Unreachable
@@ -88,7 +86,7 @@ impl AttackShark {
                     continue;
                 }
             };
-            out.push(Observation { id: key, name: Some(name(d.pid).into()), kind: Some(Kind::Mouse), state });
+            out.push(Observation { id: key, name: Some(name(dongle.pid).into()), kind: Some(Kind::Mouse), state });
         }
         for path in broken {
             self.open.remove(&path);
@@ -104,8 +102,12 @@ fn key(pid: u16) -> String {
     format!("attackshark:{pid:04x}")
 }
 
+/// Only the R5 Ultra has been seen; other models on the same dongle get a generic name.
 fn name(pid: u16) -> &'static str {
-    NAMES.iter().find(|n| n.0 == pid).map_or("Attack Shark mouse", |n| n.1)
+    match pid {
+        0x0047 => "Attack Shark R5 Ultra",
+        _ => "Attack Shark mouse",
+    }
 }
 
 fn hex(b: &[u8]) -> String {
@@ -114,8 +116,8 @@ fn hex(b: &[u8]) -> String {
 
 /// The battery percentage from the feature report buffer (id byte first).
 fn parse(r: &[u8]) -> Option<u8> {
-    match r.get(BATTERY_AT) {
-        Some(&p) if (1..=100).contains(&p) => Some(p),
+    match r.get(BATTERY_INDEX) {
+        Some(&percent) if (1..=100).contains(&percent) => Some(percent),
         _ => None,
     }
 }
@@ -136,7 +138,7 @@ mod tests {
     fn rejects_empty_or_out_of_range() {
         assert_eq!(parse(&[0u8; REPORT_LEN]), None);
         let mut r = [0u8; REPORT_LEN];
-        r[BATTERY_AT] = 0xff;
+        r[BATTERY_INDEX] = 0xff;
         assert_eq!(parse(&r), None);
         assert_eq!(parse(&[0x00, 0xa1]), None);
     }
