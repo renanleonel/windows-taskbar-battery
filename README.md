@@ -43,6 +43,7 @@
 | **Xbox controllers** | Xbox One / Series and other XInput controllers, over the Xbox Wireless adapter, Bluetooth, or USB | Windows.Gaming.Input battery report (exact capacity) |
 | **PlayStation controllers** | DualSense, DualSense Edge, DualShock 4, over USB or Bluetooth | The controller's own input report |
 | **Delux mice** | Delux and other 2.4 GHz mice on the Xenta dongle (USB ID 1D57:FA60) | The dongle's status report (charging state not detected) |
+| **Rapoo mice** | VT2 Pro Max and other Rapoo mice on Rapoo's 2.4 GHz dongle (USB ID 24AE) | The dongle's status report, read without writing to it (charging state not detected) |
 | **MCHOSE mice** | A7, A7 V2, L7, M7, K7 Ultra and other models on M HUB's classic protocol, over the receiver or a cable | The receiver's status report, the one M HUB uses (charging detected). Newer models (A7 V3, K7 V2, K5…) aren't supported yet |
 | **Corsair headsets** | HS80 MAX, VOID WIRELESS V2, VIRTUOSO MAX, and the older VOID / VOID PRO / VOID RGB ELITE / HS70 wireless headsets, over their dongle | The dongle's battery query, as iCUE does (charging detected on the older VOID family only) |
 | **Razer mice and keyboards** | 38 wireless mouse models (Viper, DeathAdder, Basilisk, Naga, Cobra, Pro Click, Orochi V2…) and the wireless BlackWidow V3/V4, DeathStalker V2 Pro and Joro keyboards, over the receiver or a cable | Razer's own battery and charging queries, as Synapse uses them |
@@ -67,6 +68,7 @@
 | HeadsetControl headsets | USB dongle | ⚠️ implemented, not yet tested on hardware |
 | MCHOSE V9 Pro / X9 (headset) | 2.4 GHz dongle | ⚠️ implemented, not yet tested on hardware |
 | MCHOSE mice (classic protocol) | 2.4 GHz receiver, cable | ⚠️ implemented, not yet tested on hardware |
+| Rapoo VT2 Pro Max | 2.4 GHz dongle (24AE:1423) | ✅ matches the Rapoo app, per a user report (charging not detected) |
 | Corsair HS80 MAX / VOID WIRELESS V2 / VIRTUOSO MAX | dongle | ⚠️ implemented, not yet tested on hardware |
 | Corsair VOID / VOID PRO / VOID RGB ELITE / HS70 Wireless | dongle | ⚠️ implemented, not yet tested on hardware |
 | Razer mice and keyboards | receiver, cable | ⚠️ implemented, not yet tested on hardware |
@@ -133,7 +135,7 @@ Right-click the widget to see:
 - **Every detected device** with its current level, including disconnected ones. Uncheck a device to hide it from the taskbar, check it again to bring it back.
 - **Refresh now:** checks all devices immediately.
 - **Low battery alerts:** a Windows notification when a device drops to 15%, sent once per discharge. It re-arms after the device is charged or climbs above 20%. On by default.
-- **Start with Windows:** turn launching at login on or off. It's on by default.
+- **Start with Windows:** turn launching at login on or off. It's on by default. It also follows Windows' own Startup apps switch (Task Manager → Startup apps): if that's off, this is unchecked, and checking it turns it back on.
 - **Probe an unsupported device (60 s):** records what your USB dongles send, for a device report. See [Probing an unsupported device](#probing-an-unsupported-device).
 - **Exit**
 
@@ -290,7 +292,8 @@ Everything it writes:
 | Location | Purpose |
 |---|---|
 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `TaskbarBattery` | Start with Windows |
-| `HKCU\Software\taskbar-battery` → `AutostartOptOut`, `Hidden`, `LowBatteryAlerts` | Your menu choices |
+| `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` → `TaskbarBattery` | Windows' Startup apps switch for it (written when you toggle Start with Windows) |
+| `HKCU\Software\taskbar-battery` → `AutostartOptOut`, `Hidden`, `LowBatteryAlerts`, `Welcomed` | Your menu choices, and whether the first-run notification was shown |
 | `HKCU\Software\Classes\AppUserModelId\TaskbarBattery` | Lets Windows show its notifications |
 | `%LOCALAPPDATA%\taskbar-battery\icon.png` | Icon shown in its notifications |
 | `%LOCALAPPDATA%\taskbar-battery\diagnostics.log` | What each device source found, for support (kept under ~512 KB) |
@@ -340,6 +343,7 @@ src/
 ├── xbox.rs            Xbox/XInput controllers (Windows.Gaming.Input)
 ├── playstation.rs     DualSense / DualShock 4 input reports
 ├── delux.rs           Delux / generic mice on the Xenta 2.4 GHz dongle
+├── rapoo.rs           Rapoo mice on Rapoo's 2.4 GHz dongle
 ├── headsetcontrol.rs  optional HeadsetControl integration
 ├── widget.rs          taskbar window, menu, tooltip, worker thread
 ├── notify.rs          low-battery notifications
@@ -376,11 +380,12 @@ Please run `cargo clippy --all-targets -- -D warnings` and `cargo test` before o
 - [MchoseBatteryTray](https://github.com/HifumiDaisuki01/MchoseBatteryTray): the MCHOSE mouse status protocol.
 - [OpenRazer](https://github.com/openrazer/openrazer): the Razer protocol and model table.
 - [rivalcfg](https://github.com/flozz/rivalcfg): the SteelSeries mouse protocols.
+- [clicksync](https://github.com/nuitfanee/clicksync): the Rapoo mouse status report.
 - [OpenLinkHub](https://github.com/jurkovic-nikola/OpenLinkHub): the Corsair SLIPSTREAM protocol.
 - [madr](https://github.com/dkbednarczyk/madr): the VXE battery query.
 - [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor): inspiration for the taskbar placement technique.
 
-This project isn't affiliated with or endorsed by Logitech, Razer, Corsair, SteelSeries, MCHOSE, Delux, VXE, Sony, Apple, or Microsoft. All trademarks belong to their owners.
+This project isn't affiliated with or endorsed by Logitech, Razer, Corsair, SteelSeries, MCHOSE, Delux, Rapoo, VXE, Sony, Apple, or Microsoft. All trademarks belong to their owners.
 
 ## License
 

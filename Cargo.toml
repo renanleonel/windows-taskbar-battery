@@ -1,6 +1,6 @@
 [package]
 name = "taskbar-battery"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2021"
 description = "Battery levels of wireless devices on the Windows taskbar"
 license = "MIT"

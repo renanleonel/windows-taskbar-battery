@@ -19,8 +19,8 @@ use std::ffi::CString;
 const BATTERY_STRENGTH: u32 = 0x0006_0020;
 
 /// Vendors read by their own module (Logitech, Razer, SteelSeries, Corsair, Sony, Microsoft,
-/// Delux, MCHOSE, VXE).
-const NATIVE_VIDS: &[u16] = &[0x046D, 0x1532, 0x1038, 0x1B1C, 0x054C, 0x045E, 0x1D57, 0x3837, 0x291D, 0x5253, 0x373B];
+/// Delux, MCHOSE, Rapoo, VXE).
+const NATIVE_VIDS: &[u16] = &[0x046D, 0x1532, 0x1038, 0x1B1C, 0x054C, 0x045E, 0x1D57, 0x3837, 0x291D, 0x5253, 0x24AE, 0x373B];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum ReportKind {

@@ -7,7 +7,7 @@
 //! - A worker thread scans devices and posts WM_APP_UPDATE to the controller.
 
 use crate::device::{Reading, Status, Tracker};
-use crate::{bluetooth, corsair, corsair_slipstream, delux, device, diag, headsetcontrol, hid_battery, init_com, logitech, mchose, mchose_mouse, notify, playstation, probe, razer, render, settings, steelseries, vxe, wide, xbox};
+use crate::{bluetooth, corsair, corsair_slipstream, delux, device, diag, headsetcontrol, hid_battery, init_com, logitech, mchose, mchose_mouse, notify, playstation, probe, rapoo, razer, render, settings, steelseries, vxe, wide, xbox};
 use std::cell::RefCell;
 use std::mem::{size_of, zeroed};
 use std::ptr::{null, null_mut};
@@ -81,12 +81,32 @@ pub fn run() {
         let mutex_name = wide(r"Local\taskbar-battery");
         CreateMutexW(null(), 0, mutex_name.as_ptr());
         if GetLastError() == ERROR_ALREADY_EXISTS {
-            return; // already running
+            // The widget stays hidden until a device is found, so say where it is.
+            init_com();
+            let _ = notify::show(
+                "Taskbar Battery is already running",
+                "Its battery levels show on the taskbar, left of the clock, once it finds a supported device.",
+            );
+            return;
         }
         SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         settings::ensure_autostart();
         settings::register_app_id();
         diag::start();
+        diag::event("autostart", settings::autostart());
+        if !settings::welcomed() {
+            // Nothing shows on the taskbar until a device is found; confirm it started.
+            std::thread::spawn(|| {
+                init_com();
+                match notify::show(
+                    "Taskbar Battery is running",
+                    "Battery levels show on the taskbar, left of the clock. Right-click them for options. Nothing shows until a supported device is found.",
+                ) {
+                    Ok(()) => settings::set_welcomed(),
+                    Err(e) => diag::event("notify", format!("first-run toast failed: {e}")),
+                }
+            });
+        }
 
         let hinst = GetModuleHandleW(null());
         let ctrl_class = wide("TaskbarBatteryController");
@@ -183,6 +203,7 @@ fn worker(controller: usize, rx: Receiver<()>) {
     let mut corsair = corsair::Corsair::default();
     let mut corsair_slipstream = corsair_slipstream::CorsairSlipstream::default();
     let mut hid_battery = hid_battery::HidBattery::default();
+    let mut rapoo = rapoo::Rapoo::default();
     let mut razer = razer::Razer::default();
     let mut steelseries = steelseries::SteelSeries::default();
     let mut vxe = vxe::Vxe::default();
@@ -200,6 +221,7 @@ fn worker(controller: usize, rx: Receiver<()>) {
         obs.extend(mchose.scan(&api));
         obs.extend(mchose_mice.scan(&api));
         obs.extend(corsair.scan(&api));
+        obs.extend(rapoo.scan(&api));
         obs.extend(razer.scan(&api));
         obs.extend(steelseries.scan(&api));
         obs.extend(vxe.scan(&api));

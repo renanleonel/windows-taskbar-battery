@@ -19,3 +19,5 @@ jobs:
         with:
           files: target/release/taskbar-battery.exe
           generate_release_notes: true
+          # Tags like v0.7.1-rc.1 are test builds: publish them as pre-releases, never "Latest".
+          prerelease: ${{ contains(github.ref_name, '-') }}
