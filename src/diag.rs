@@ -35,6 +35,11 @@ pub fn header() -> String {
     format!("taskbar-battery {} | {} | {}", env!("CARGO_PKG_VERSION"), crate::settings::windows_version(), std::env::consts::ARCH)
 }
 
+/// Where the log lives, for the crash message box (paths never go in the log itself).
+pub fn log_path() -> Option<PathBuf> {
+    path()
+}
+
 /// Marks the start of a session in the log.
 pub fn start() {
     write(&format!("--- {}", header()));
@@ -54,6 +59,12 @@ pub fn event(key: &str, msg: impl Display) {
         last.insert(key.to_string(), msg.clone());
     }
     write(&format!("[{key}] {msg}"));
+}
+
+/// Records a crash. Called from the panic hook, so it skips the dedup map (whose lock the
+/// panicking thread may hold).
+pub fn crash(msg: impl Display) {
+    write(&format!("[crash] {msg}"));
 }
 
 fn write(line: &str) {

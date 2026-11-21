@@ -33,7 +33,36 @@ pub(crate) fn init_com() {
     }
 }
 
+/// The release build has no console and aborts on panic, so a crash would otherwise close
+/// the app without a trace. Log it, and tell the user where the log is.
+fn install_crash_handler() {
+    std::panic::set_hook(Box::new(|info| {
+        let thread = std::thread::current().name().unwrap_or("unnamed").to_string();
+        let msg = format!("{info} (thread {thread})");
+        diag::crash(&msg);
+        if cfg!(debug_assertions) {
+            eprintln!("{msg}");
+            return;
+        }
+        let log = diag::log_path().map(|p| p.display().to_string()).unwrap_or_else(|| "diagnostics.log".into());
+        let text = wide(&format!(
+            "Taskbar Battery stopped because of an error:
+
+{msg}
+
+Please open an issue on GitHub and attach this file:
+{log}"
+        ));
+        let title = wide("Taskbar Battery");
+        unsafe {
+            use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK, MB_SETFOREGROUND};
+            MessageBoxW(std::ptr::null_mut(), text.as_ptr(), title.as_ptr(), MB_OK | MB_ICONERROR | MB_SETFOREGROUND);
+        }
+    }));
+}
+
 fn main() {
+    install_crash_handler();
     match std::env::args().nth(1).as_deref() {
         // Debug helpers (they print only in debug builds; release builds have no console).
         Some("--test-toast") => {

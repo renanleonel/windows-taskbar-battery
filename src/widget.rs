@@ -81,13 +81,29 @@ pub fn run() {
         let mutex_name = wide(r"Local\taskbar-battery");
         CreateMutexW(null(), 0, mutex_name.as_ptr());
         if GetLastError() == ERROR_ALREADY_EXISTS {
-            return; // already running
+            // The widget stays hidden until a device is found, so say where it is.
+            init_com();
+            let _ = notify::show(
+                "Taskbar Battery is already running",
+                "Its battery levels show on the taskbar, left of the clock, once it finds a supported device.",
+            );
+            return;
         }
         SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         settings::ensure_autostart();
         settings::register_app_id();
         diag::start();
         diag::event("autostart", settings::autostart());
+        if settings::first_run() {
+            // Nothing shows on the taskbar until a device is found; confirm it started.
+            std::thread::spawn(|| {
+                init_com();
+                let _ = notify::show(
+                    "Taskbar Battery is running",
+                    "Battery levels show on the taskbar, left of the clock. Right-click them for options. Nothing shows until a supported device is found.",
+                );
+            });
+        }
 
         let hinst = GetModuleHandleW(null());
         let ctrl_class = wide("TaskbarBatteryController");

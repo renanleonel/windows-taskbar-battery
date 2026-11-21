@@ -291,7 +291,7 @@ Everything it writes:
 |---|---|
 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` → `TaskbarBattery` | Start with Windows |
 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` → `TaskbarBattery` | Windows' Startup apps switch for it (written when you toggle Start with Windows) |
-| `HKCU\Software\taskbar-battery` → `AutostartOptOut`, `Hidden`, `LowBatteryAlerts` | Your menu choices |
+| `HKCU\Software\taskbar-battery` → `AutostartOptOut`, `Hidden`, `LowBatteryAlerts`, `Welcomed` | Your menu choices, and whether the first-run notification was shown |
 | `HKCU\Software\Classes\AppUserModelId\TaskbarBattery` | Lets Windows show its notifications |
 | `%LOCALAPPDATA%\taskbar-battery\icon.png` | Icon shown in its notifications |
 | `%LOCALAPPDATA%\taskbar-battery\diagnostics.log` | What each device source found, for support (kept under ~512 KB) |
