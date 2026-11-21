@@ -94,14 +94,17 @@ pub fn run() {
         settings::register_app_id();
         diag::start();
         diag::event("autostart", settings::autostart());
-        if settings::first_run() {
+        if !settings::welcomed() {
             // Nothing shows on the taskbar until a device is found; confirm it started.
             std::thread::spawn(|| {
                 init_com();
-                let _ = notify::show(
+                match notify::show(
                     "Taskbar Battery is running",
                     "Battery levels show on the taskbar, left of the clock. Right-click them for options. Nothing shows until a supported device is found.",
-                );
+                ) {
+                    Ok(()) => settings::set_welcomed(),
+                    Err(e) => diag::event("notify", format!("first-run toast failed: {e}")),
+                }
             });
         }
 

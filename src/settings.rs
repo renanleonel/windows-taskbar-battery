@@ -109,13 +109,13 @@ pub fn ensure_autostart() {
     write_run_entry(true);
 }
 
-/// True only the first time it's called on this PC (for this user).
-pub fn first_run() -> bool {
-    if read_dword(APP_KEY, "Welcomed") == Some(1) {
-        return false;
-    }
+/// Whether the first-run notification has been shown on this PC (for this user).
+pub fn welcomed() -> bool {
+    read_dword(APP_KEY, "Welcomed") == Some(1)
+}
+
+pub fn set_welcomed() {
     write_dword(APP_KEY, "Welcomed", 1);
-    true
 }
 
 pub fn alerts_enabled() -> bool {

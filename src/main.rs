@@ -36,15 +36,32 @@ pub(crate) fn init_com() {
 /// The release build has no console and aborts on panic, so a crash would otherwise close
 /// the app without a trace. Log it, and tell the user where the log is.
 fn install_crash_handler() {
+    static IN_HOOK: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     std::panic::set_hook(Box::new(|info| {
+        // The message box pumps messages; a second panic while it's up just aborts.
+        if IN_HOOK.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        let what = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(|s| s.to_string())
+            .or_else(|| info.payload().downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "unknown error".into());
+        // Our own sources show as relative paths (src\widget.rs); a dependency's is absolute
+        // (the builder's cargo registry), and the log holds no paths, so drop those.
+        let at = match info.location() {
+            Some(l) if !std::path::Path::new(l.file()).is_absolute() => format!(" at {}:{}", l.file(), l.line()),
+            _ => String::new(),
+        };
         let thread = std::thread::current().name().unwrap_or("unnamed").to_string();
-        let msg = format!("{info} (thread {thread})");
+        let msg = format!("{what}{at} (thread {thread})");
         diag::crash(&msg);
         if cfg!(debug_assertions) {
             eprintln!("{msg}");
             return;
         }
-        let log = diag::log_path().map(|p| p.display().to_string()).unwrap_or_else(|| "diagnostics.log".into());
+        let log = diag::path().map(|p| p.display().to_string()).unwrap_or_else(|| "diagnostics.log".into());
         let text = wide(&format!(
             "Taskbar Battery stopped because of an error:
 

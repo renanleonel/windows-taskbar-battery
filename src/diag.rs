@@ -8,6 +8,9 @@
 //! serial numbers or file paths. A Bluetooth device is tagged with a 16-bit hash of its
 //! address (`bt#3f2a`), enough to match up lines about it but not to recover the address.
 //!
+//! If the app crashes, the panic message is logged as a `[crash]` line, with its source
+//! location only when that's inside this crate.
+//!
 //! Sources scan every few seconds, so an event is only written when it differs from the last
 //! one written for the same key.
 
@@ -27,17 +30,13 @@ const COPY_LEN: usize = 32 * 1024;
 
 static LAST: Mutex<Option<HashMap<String, String>>> = Mutex::new(None);
 
-fn path() -> Option<PathBuf> {
+/// Also shown in the crash message box (paths never go in the log itself).
+pub fn path() -> Option<PathBuf> {
     std::env::var_os("LOCALAPPDATA").map(|d| PathBuf::from(d).join("taskbar-battery").join("diagnostics.log"))
 }
 
 pub fn header() -> String {
     format!("taskbar-battery {} | {} | {}", env!("CARGO_PKG_VERSION"), crate::settings::windows_version(), std::env::consts::ARCH)
-}
-
-/// Where the log lives, for the crash message box (paths never go in the log itself).
-pub fn log_path() -> Option<PathBuf> {
-    path()
 }
 
 /// Marks the start of a session in the log.
