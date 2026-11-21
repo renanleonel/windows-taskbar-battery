@@ -14,16 +14,46 @@ const RUN_VALUE: &str = "TaskbarBattery";
 /// Apps > Startup). A 12-byte binary value: an odd first byte means disabled, and Windows
 /// then skips the Run entry at logon even though it's there.
 const STARTUP_APPROVED_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+/// "Enabled", as Windows writes it: a 4-byte flag (2 = on, 3 = off), then the FILETIME it
+/// was turned off (zero while on).
 const APPROVED_ON: [u8; 12] = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 pub fn light_theme() -> bool {
     read_dword(r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme") == Some(1)
 }
 
-/// Whether Windows will actually start the app at logon: the Run entry is there and not
-/// turned off in Windows' Startup apps.
+/// Whether Windows will actually start the app at logon.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Autostart {
+    On,
+    /// No Run entry (turned off from the menu, or never registered).
+    NoRunEntry,
+    /// The Run entry is there, but turned off in Windows' Startup apps.
+    DisabledByWindows,
+}
+
+impl std::fmt::Display for Autostart {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(match self {
+            Autostart::On => "on",
+            Autostart::NoRunEntry => "off (no Run entry)",
+            Autostart::DisabledByWindows => "off (turned off in Windows' Startup apps)",
+        })
+    }
+}
+
+pub fn autostart() -> Autostart {
+    if !run_entry_present() {
+        Autostart::NoRunEntry
+    } else if read_binary(STARTUP_APPROVED_KEY, RUN_VALUE).is_some_and(|b| is_disabled_flag(&b)) {
+        Autostart::DisabledByWindows
+    } else {
+        Autostart::On
+    }
+}
+
 pub fn autostart_enabled() -> bool {
-    run_entry_present() && !startup_disabled_by_windows()
+    autostart() == Autostart::On
 }
 
 fn run_entry_present() -> bool {
@@ -35,22 +65,9 @@ fn run_entry_present() -> bool {
     }
 }
 
-/// Turned off in Task Manager > Startup apps (or Settings > Apps > Startup).
-fn startup_disabled_by_windows() -> bool {
-    read_binary(STARTUP_APPROVED_KEY, RUN_VALUE).is_some_and(|b| is_disabled(&b))
-}
-
-fn is_disabled(approved: &[u8]) -> bool {
+/// A StartupApproved value means "disabled" when its first byte is odd.
+fn is_disabled_flag(approved: &[u8]) -> bool {
     approved.first().is_some_and(|b| b & 1 == 1)
-}
-
-/// For diagnostics: why the app would or wouldn't start with Windows.
-pub fn autostart_status() -> &'static str {
-    match (run_entry_present(), startup_disabled_by_windows()) {
-        (false, _) => "off (no Run entry)",
-        (true, true) => "off (turned off in Windows' Startup apps)",
-        (true, false) => "on",
-    }
 }
 
 /// Adds (with the current exe path) or removes the Run entry.
@@ -216,10 +233,10 @@ mod tests {
 
     #[test]
     fn startup_approved_flag() {
-        assert!(!is_disabled(&APPROVED_ON));
-        assert!(!is_disabled(&[0x06, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
-        assert!(is_disabled(&[0x03, 0, 0, 0, 0x8a, 0x3c, 0x1d, 0x5e, 0x2f, 0x5b, 0xdb, 0x01]));
-        assert!(is_disabled(&[0x07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
-        assert!(!is_disabled(&[]));
+        assert!(!is_disabled_flag(&APPROVED_ON));
+        assert!(!is_disabled_flag(&[0x06, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+        assert!(is_disabled_flag(&[0x03, 0, 0, 0, 0x8a, 0x3c, 0x1d, 0x5e, 0x2f, 0x5b, 0xdb, 0x01]));
+        assert!(is_disabled_flag(&[0x07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+        assert!(!is_disabled_flag(&[]));
     }
 }
