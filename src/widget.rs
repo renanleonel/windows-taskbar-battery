@@ -297,6 +297,11 @@ unsafe fn ensure_widget() {
         GetModuleHandleW(null()),
         null(),
     );
+    // A child inherits the RTL taskbar's mirroring, which would flip the rendered bitmap.
+    let ex = GetWindowLongW(w, GWL_EXSTYLE) as u32;
+    if ex & WS_EX_LAYOUTRTL != 0 {
+        SetWindowLongW(w, GWL_EXSTYLE, (ex & !WS_EX_LAYOUTRTL) as i32);
+    }
     let (controller, old_tip) = with(|a| (a.controller, a.tooltip));
     if !old_tip.is_null() {
         DestroyWindow(old_tip); // its tool was the previous (dead) widget
@@ -421,20 +426,24 @@ unsafe fn place() {
     let notify = FindWindowExW(tray, null_mut(), wide("TrayNotifyWnd").as_ptr(), null());
     let has_notify = !notify.is_null() && GetWindowRect(notify, &mut nr) != 0 && nr.right > nr.left;
     let margin = 4 * GetDpiForWindow(tray).max(96) as i32 / 96;
+    // On a right-to-left taskbar (Hebrew/Arabic Windows) the notification area sits on the left
+    // and child coordinates are mirrored: x runs leftwards from the taskbar's right edge.
+    let rtl = GetWindowLongW(tray, GWL_EXSTYLE) as u32 & WS_EX_LAYOUTRTL != 0;
+    let client_left = |r: &RECT| if rtl { tr.right - r.right } else { r.left - tr.left };
     let (x, y) = match rendered {
         Some(render::Layout::Column { .. }) => {
             let bottom = if has_notify { nr.top } else { tr.bottom };
             (0, bottom - tr.top - height - margin)
         }
         _ => {
-            let right = if has_notify { nr.left } else { tr.right };
-            (right - tr.left - width - margin, 0)
+            let edge = if has_notify { client_left(&nr) } else { tr.right - tr.left };
+            (edge - width - margin, 0)
         }
     };
 
     let mut cur: RECT = zeroed();
     GetWindowRect(widget, &mut cur);
-    let moved = cur.left - tr.left != x
+    let moved = client_left(&cur) != x
         || cur.top - tr.top != y
         || cur.right - cur.left != width
         || cur.bottom - cur.top != height;
