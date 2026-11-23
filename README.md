@@ -50,6 +50,7 @@
 | **SteelSeries mice** | Aerox 3/5/9 Wireless, Prime (Mini) Wireless, Rival 3 Wireless (Gen 2), Rival 650 Wireless, over the dongle or a cable | The mouse's battery query (charging detected) |
 | **VXE mice** | R1 SE (373B:10C9) and MAD R, plus other VXE / ATK mice that answer the same query, over the dongle or a cable | The dongle's battery query, the one the ATK app uses (charging detected) |
 | **Corsair mice and keyboards** | Harpoon, Dark Core, Ironclaw, M65/M75, Sabre, Scimitar, K57, K70 Core TKL, K100 Air… on a SLIPSTREAM dongle | The dongle's battery query, without taking the device from iCUE (charging state not detected) |
+| **Attack Shark mice** | R5 Ultra (373E:0047) over its 2.4 GHz dongle; other Attack Shark mice on a 373E dongle may work but are untested | The dongle's status report, read without writing to it (charging state not detected) |
 | **Other USB devices** | Any dongle or device that reports its battery the standard HID way (a Battery Strength field) | Read straight from the device's own HID description |
 | **MCHOSE headsets** | V9 Pro (291D:385D) and X9 (3837:6045) over their 2.4 GHz dongle | The dongle's battery query, the one M HUB uses (charging state not detected) |
 | **Other headsets** via [HeadsetControl](#other-headsets-headsetcontrol) | SteelSeries Arctis, HyperX Cloud, Corsair, Audeze, Logitech G and more | HeadsetControl, if installed (optional) |
@@ -63,6 +64,7 @@
 | Apple AirPods | Classic Bluetooth | ✅ |
 | Delux wireless mouse | 2.4 GHz dongle (1D57:FA60) | ✅ matches the Delux app (±2%) |
 | VXE R1 SE (mouse) | 2.4 GHz dongle (373B:10C9) | ✅ matches the ATK app |
+| Attack Shark R5 Ultra | 2.4 GHz dongle (373E:0047) | ⚠️ implemented from a device probe, not yet confirmed against Attack Shark's app |
 | Bluetooth LE mouse/keyboard | Bluetooth LE | ⚠️ implemented, not yet tested on hardware |
 | Xbox / PlayStation controllers | all | ⚠️ implemented, not yet tested on hardware |
 | HeadsetControl headsets | USB dongle | ⚠️ implemented, not yet tested on hardware |
@@ -344,6 +346,7 @@ src/
 ├── playstation.rs     DualSense / DualShock 4 input reports
 ├── delux.rs           Delux / generic mice on the Xenta 2.4 GHz dongle
 ├── rapoo.rs           Rapoo mice on Rapoo's 2.4 GHz dongle
+├── attack_shark.rs    Attack Shark mice on their 2.4 GHz dongle
 ├── headsetcontrol.rs  optional HeadsetControl integration
 ├── widget.rs          taskbar window, menu, tooltip, worker thread
 ├── notify.rs          low-battery notifications
@@ -385,7 +388,7 @@ Please run `cargo clippy --all-targets -- -D warnings` and `cargo test` before o
 - [madr](https://github.com/dkbednarczyk/madr): the VXE battery query.
 - [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor): inspiration for the taskbar placement technique.
 
-This project isn't affiliated with or endorsed by Logitech, Razer, Corsair, SteelSeries, MCHOSE, Delux, Rapoo, VXE, Sony, Apple, or Microsoft. All trademarks belong to their owners.
+This project isn't affiliated with or endorsed by Logitech, Razer, Corsair, SteelSeries, MCHOSE, Delux, Rapoo, VXE, Attack Shark, Sony, Apple, or Microsoft. All trademarks belong to their owners.
 
 ## License
 

@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod attack_shark;
 mod bluetooth;
 mod corsair;
 mod corsair_slipstream;
@@ -119,6 +120,7 @@ fn main() {
             obs.extend(razer::Razer::default().scan(&api));
             obs.extend(steelseries::SteelSeries::default().scan(&api));
             obs.extend(vxe::Vxe::default().scan(&api));
+            obs.extend(attack_shark::AttackShark::default().scan(&api));
             obs.extend(hid_battery::HidBattery::default().scan(&api));
             obs.extend(xbox::scan());
             obs.extend(bluetooth::scan());
